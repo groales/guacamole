@@ -80,11 +80,17 @@ Este comando extrae el esquema de base de datos del contenedor de Guacamole.
 ### Paso 2: Crear Directorio de Inicialización
 
 ```bash
-mkdir initdb
-mv initdb.sql initdb/
+# Crear directorio en el host
+sudo mkdir -p /opt/stacks/guacamole/initdb
+
+# Mover script al directorio
+sudo mv initdb.sql /opt/stacks/guacamole/initdb/
+
+# Ajustar permisos
+sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
 ```
 
-El archivo `initdb.sql` se copiará automáticamente al contenedor de PostgreSQL durante el primer inicio.
+El archivo `initdb.sql` se montará desde el host y PostgreSQL lo ejecutará automáticamente durante el primer inicio.
 
 ### Paso 3: Desplegar los Contenedores
 
@@ -142,8 +148,8 @@ Para cambiar la contraseña:
     # Eliminar volumen de base de datos
     docker volume rm guacamole-db_data
     
-    # Verificar que existe initdb/initdb.sql
-    ls -la initdb/
+    # Verificar que existe el script en el host
+    ls -la /opt/stacks/guacamole/initdb/
     
     # Reiniciar servicios (inicialización automática)
     docker compose up -d
@@ -325,94 +331,6 @@ Accede a `https://guacamole.example.com/guacamole/` y login con `guacadmin` / `g
 
 ---
 
-### Método 3: Stack con Contenedor Init Temporal
-
-Este método usa un contenedor temporal para generar el script automáticamente.
-
-**Stack compose**:
-
-```yaml
-services:
-  guacamole-init:
-    image: guacamole/guacamole:latest
-    container_name: guacamole-init
-    command: /bin/sh -c "/opt/guacamole/bin/initdb.sh --postgres > /initdb/initdb.sql && chmod 644 /initdb/initdb.sql"
-    volumes:
-      - guacamole-initdb:/initdb
-    restart: "no"
-
-  guacd:
-    container_name: guacd
-    image: guacamole/guacd:latest
-    restart: unless-stopped
-    networks:
-      - guacamole-internal
-    depends_on:
-      guacamole-init:
-        condition: service_completed_successfully
-
-  guacamole-db:
-    container_name: guacamole-db
-    image: postgres:18-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-guacamole_db}
-      POSTGRES_USER: ${POSTGRES_USER:-guacamole_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - guacamole-db_data:/var/lib/postgresql
-      - guacamole-initdb:/docker-entrypoint-initdb.d:ro
-    networks:
-      - guacamole-internal
-    depends_on:
-      guacamole-init:
-        condition: service_completed_successfully
-
-  guacamole:
-    container_name: guacamole
-    image: guacamole/guacamole:latest
-    restart: unless-stopped
-    depends_on:
-      - guacd
-      - guacamole-db
-    environment:
-      GUACD_HOSTNAME: guacd
-      POSTGRES_HOSTNAME: guacamole-db
-      POSTGRES_DATABASE: ${POSTGRES_DB:-guacamole_db}
-      POSTGRES_USER: ${POSTGRES_USER:-guacamole_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      REMOTE_IP_VALVE_ENABLED: 'true'
-    ports:
-      - "8080:8080"
-    networks:
-      - proxy
-      - guacamole-internal
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.guacamole.rule=Host(`${DOMAIN_HOST}`)"
-      - "traefik.http.routers.guacamole.entrypoints=websecure"
-      - "traefik.http.routers.guacamole.tls.certresolver=letsencrypt"
-      - "traefik.http.services.guacamole.loadbalancer.server.port=8080"
-
-networks:
-  proxy:
-    external: true
-  guacamole-internal:
-    driver: bridge
-
-volumes:
-  guacamole-initdb:
-    name: guacamole-initdb
-  guacamole-db_data:
-    name: guacamole-db_data
-```
-
-**Ventajas**: Totalmente automático, no requiere pasos manuales.
-
-**Desventajas**: El contenedor `guacamole-init` quedará en estado "Exited" (normal).
-
----
-
 ### Troubleshooting en Portainer
 
 #### Error: "relation 'guacamole_user' does not exist"
@@ -469,9 +387,10 @@ openssl rand -base64 32
 # Generar script SQL de inicialización
 docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgres > initdb.sql
 
-# Crear directorio y mover script
-mkdir initdb
-mv initdb.sql initdb/
+# Crear directorio en el host y mover script
+sudo mkdir -p /opt/stacks/guacamole/initdb
+sudo mv initdb.sql /opt/stacks/guacamole/initdb/
+sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
 ```
 
 ### Paso 3: Configurar Traefik
@@ -524,8 +443,9 @@ docker logs guacamole-db 2>&1 | grep "ready for start up"
 2. **Generar script de inicialización de base de datos**:
    ```bash
    docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgres > initdb.sql
-   mkdir initdb
-   mv initdb.sql initdb/
+   sudo mkdir -p /opt/stacks/guacamole/initdb
+   sudo mv initdb.sql /opt/stacks/guacamole/initdb/
+   sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
    ```
 
 ### Paso 1: Clonar Repositorio
@@ -567,8 +487,8 @@ cp docker-compose.override.traefik.yml.example docker-compose.override.yml
 ### Paso 4: Verificar Archivos de Inicialización
 
 ```bash
-# Verificar que existe el script SQL
-ls -la initdb/
+# Verificar que existe el script SQL en el host
+ls -la /opt/stacks/guacamole/initdb/
 
 # Deberías ver: initdb.sql
 ```
@@ -993,11 +913,13 @@ docker compose down
 # Eliminar volumen
 docker volume rm guacamole-db_data
 
-# Verificar que existe initdb/initdb.sql
-ls -la initdb/
+# Verificar que existe el script en el host
+ls -la /opt/stacks/guacamole/initdb/
 
 # Si no existe, generarlo:
-docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgres > initdb/initdb.sql
+docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgres > /tmp/initdb.sql
+sudo mv /tmp/initdb.sql /opt/stacks/guacamole/initdb/
+sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
 
 # Reiniciar (inicialización automática)
 docker compose up -d
