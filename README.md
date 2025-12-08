@@ -201,14 +201,14 @@ services:
 
   guacamole-db:
     container_name: guacamole-db
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-guacamole_db}
       POSTGRES_USER: ${POSTGRES_USER:-guacamole_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - guacamole-db_data:/var/lib/postgresql/data
+      - guacamole-db_data:/var/lib/postgresql
       - /opt/stacks/guacamole/initdb:/docker-entrypoint-initdb.d:ro
     networks:
       - guacamole-internal
@@ -353,14 +353,14 @@ services:
 
   guacamole-db:
     container_name: guacamole-db
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-guacamole_db}
       POSTGRES_USER: ${POSTGRES_USER:-guacamole_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - guacamole-db_data:/var/lib/postgresql/data
+      - guacamole-db_data:/var/lib/postgresql
       - guacamole-initdb:/docker-entrypoint-initdb.d:ro
     networks:
       - guacamole-internal
