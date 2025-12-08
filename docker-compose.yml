@@ -35,6 +35,7 @@ services:
       POSTGRESQL_USERNAME: ${POSTGRES_USER:-guacamole_user}
       POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
       REMOTE_IP_VALVE_ENABLED: 'true'
+      WEBAPP_CONTEXT: ROOT
     networks:
       - proxy
       - guacamole-internal

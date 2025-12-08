@@ -113,7 +113,7 @@ cp docker-compose.override.traefik.yml.example docker-compose.override.yml
 sudo docker compose up -d
 ```
 
-**Acceso inicial**: Usuario `guacadmin` / Password `guacadmin` (**cambiar inmediatamente**)
+**Acceso inicial**: `https://guacamole.example.com/` → Usuario `guacadmin` / Password `guacadmin` (**cambiar inmediatamente**)
 
 ---
 
