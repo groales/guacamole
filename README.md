@@ -228,10 +228,11 @@ services:
       - guacamole-db
     environment:
       GUACD_HOSTNAME: guacd
-      POSTGRES_HOSTNAME: guacamole-db
-      POSTGRES_DB: ${POSTGRES_DB:-guacamole_db}
-      POSTGRES_USER: ${POSTGRES_USER:-guacamole_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      GUACD_PORT: 4822
+      POSTGRESQL_HOSTNAME: guacamole-db
+      POSTGRESQL_DATABASE: ${POSTGRES_DB:-guacamole_db}
+      POSTGRESQL_USERNAME: ${POSTGRES_USER:-guacamole_user}
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
       REMOTE_IP_VALVE_ENABLED: 'true'
     ports:
       - "8080:8080"
@@ -249,7 +250,7 @@ networks:
   proxy:
     external: true
   guacamole-internal:
-    driver: bridge
+    name: guacamole-internal
 
 volumes:
   guacamole-db_data:
