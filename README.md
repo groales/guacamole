@@ -72,7 +72,7 @@ Apache Guacamole es un gateway de escritorio remoto sin cliente que soporta prot
 Ejecuta este comando para generar el script SQL necesario:
 
 ```bash
-docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
+sudo docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
 ```
 
 Este comando extrae el esquema de base de datos del contenedor de Guacamole.
@@ -104,7 +104,7 @@ cp .env.example .env
 nano .env
 
 # Iniciar servicios
-docker compose up -d
+sudo docker compose up -d
 ```
 
 ### Paso 4: Verificar Inicialización
@@ -113,7 +113,7 @@ Comprueba que la base de datos se inicializó correctamente:
 
 ```bash
 # Ver logs de PostgreSQL
-docker logs guacamole-db
+sudo docker logs guacamole-db
 
 # Deberías ver: "PostgreSQL init process complete; ready for start up"
 ```
@@ -172,7 +172,7 @@ Este método genera el script SQL antes de crear el stack en Portainer.
 En tu máquina o servidor, ejecuta:
 
 ```bash
-docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
+sudo docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
 ```
 
 #### Paso 2: Crear Directorio en el Host
@@ -269,10 +269,10 @@ volumes:
 
 ```bash
 # Ver logs de PostgreSQL
-docker logs guacamole-db
+sudo docker logs guacamole-db
 
 # Verificar tablas creadas
-docker exec -it guacamole-db psql -U guacamole_user -d guacamole_db -c "\dt"
+sudo docker exec -it guacamole-db psql -U guacamole_user -d guacamole_db -c "\dt"
 ```
 
 Deberías ver tablas como: `guacamole_user`, `guacamole_connection`, `guacamole_connection_group`, etc.
@@ -292,19 +292,19 @@ Si ya desplegaste el stack sin el script de inicialización, puedes inicializar 
 #### Paso 1: Generar Script SQL
 
 ```bash
-docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
+sudo docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
 ```
 
 #### Paso 2: Copiar Script al Contenedor
 
 ```bash
-docker cp initdb.sql guacamole-db:/tmp/initdb.sql
+sudo docker cp initdb.sql guacamole-db:/tmp/initdb.sql
 ```
 
 #### Paso 3: Ejecutar Script en PostgreSQL
 
 ```bash
-docker exec -i guacamole-db psql -U guacamole_user -d guacamole_db < initdb.sql
+sudo docker exec -i guacamole-db psql -U guacamole_user -d guacamole_db < initdb.sql
 ```
 
 O alternativamente:
@@ -323,7 +323,7 @@ En Portainer:
 O desde CLI:
 
 ```bash
-docker restart guacamole
+sudo docker restart guacamole
 ```
 
 #### Paso 5: Verificar
@@ -386,7 +386,7 @@ openssl rand -base64 32
 
 ```bash
 # Generar script SQL de inicialización
-docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
+sudo docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
 
 # Crear directorio en el host y mover script
 sudo mkdir -p /opt/stacks/guacamole/initdb
@@ -408,20 +408,20 @@ El archivo incluye:
 ### Paso 4: Iniciar Servicios
 
 ```bash
-docker compose up -d
+sudo docker compose up -d
 ```
 
 ### Paso 5: Verificar Despliegue
 
 ```bash
 # Ver estado de contenedores
-docker compose ps
+sudo docker compose ps
 
 # Ver logs
-docker compose logs -f
+sudo docker compose logs -f
 
 # Verificar inicialización de base de datos
-docker logs guacamole-db 2>&1 | grep "ready for start up"
+sudo docker logs guacamole-db 2>&1 | grep "ready for start up"
 ```
 
 ### Paso 6: Acceder a Guacamole
@@ -497,21 +497,21 @@ ls -la /opt/stacks/guacamole/initdb/
 ### Paso 5: Iniciar Servicios
 
 ```bash
-docker compose up -d
+sudo docker compose up -d
 ```
 
 ### Paso 6: Verificar Despliegue
 
 ```bash
 # Ver estado
-docker compose ps
+sudo docker compose ps
 
 # Ver logs de inicialización
-docker logs guacamole-db
-docker logs guacamole
+sudo docker logs guacamole-db
+sudo docker logs guacamole
 
 # Verificar conectividad interna
-docker exec -it guacamole-db psql -U guacamole_user -d guacamole_db -c "\dt"
+sudo docker exec -it guacamole-db psql -U guacamole_user -d guacamole_db -c "\dt"
 # Deberías ver las tablas: guacamole_user, guacamole_connection, etc.
 ```
 
@@ -740,7 +740,7 @@ volumes:
 
 Reiniciar servicios:
 ```bash
-docker compose up -d
+sudo docker compose up -d
 ```
 
 ### Acceder a Grabaciones
@@ -749,12 +749,12 @@ Las grabaciones se almacenan en formato Guacamole (`.guac`) y requieren reproduc
 
 **Listar grabaciones**:
 ```bash
-docker exec -it guacamole ls -lh /recordings/
+sudo docker exec -it guacamole ls -lh /recordings/
 ```
 
 **Exportar grabaciones**:
 ```bash
-docker cp guacamole:/recordings/ ./recordings_backup/
+sudo docker cp guacamole:/recordings/ ./recordings_backup/
 ```
 
 ## Backup y Restauración
@@ -765,26 +765,26 @@ docker cp guacamole:/recordings/ ./recordings_backup/
 
 ```bash
 # Backup completo
-docker exec guacamole-db pg_dump -U guacamole_user guacamole_db > guacamole_backup_$(date +%Y%m%d).sql
+sudo docker exec guacamole-db pg_dump -U guacamole_user guacamole_db > guacamole_backup_$(date +%Y%m%d).sql
 
 # Backup comprimido
-docker exec guacamole-db pg_dump -U guacamole_user guacamole_db | gzip > guacamole_backup_$(date +%Y%m%d).sql.gz
+sudo docker exec guacamole-db pg_dump -U guacamole_user guacamole_db | gzip > guacamole_backup_$(date +%Y%m%d).sql.gz
 ```
 
 **Método 2: Backup del volumen Docker**
 
 ```bash
 # Detener Guacamole (mantener DB activa)
-docker compose stop guacamole
+sudo docker compose stop guacamole
 
 # Backup del volumen
-docker run --rm \
+sudo docker run --rm \
   -v guacamole-db_data:/data \
   -v $(pwd):/backup \
   alpine tar czf /backup/guacamole_db_$(date +%Y%m%d).tar.gz -C /data .
 
 # Reiniciar Guacamole
-docker compose start guacamole
+sudo docker compose start guacamole
 ```
 
 ### Restauración de Base de Datos
@@ -793,13 +793,13 @@ docker compose start guacamole
 
 ```bash
 # Detener servicios
-docker compose down
+sudo docker compose down
 
 # Eliminar volumen antiguo
-docker volume rm guacamole-db_data
+sudo docker volume rm guacamole-db_data
 
 # Iniciar solo la base de datos
-docker compose up -d guacamole-db
+sudo docker compose up -d guacamole-db
 
 # Esperar a que PostgreSQL esté listo
 sleep 10
@@ -808,29 +808,29 @@ sleep 10
 cat guacamole_backup_20250108.sql | docker exec -i guacamole-db psql -U guacamole_user -d guacamole_db
 
 # Iniciar todos los servicios
-docker compose up -d
+sudo docker compose up -d
 ```
 
 **Método 2: Desde volumen**
 
 ```bash
 # Detener servicios
-docker compose down
+sudo docker compose down
 
 # Eliminar volumen antiguo
-docker volume rm guacamole-db_data
+sudo docker volume rm guacamole-db_data
 
 # Crear nuevo volumen
-docker volume create guacamole-db_data
+sudo docker volume create guacamole-db_data
 
 # Restaurar datos
-docker run --rm \
+sudo docker run --rm \
   -v guacamole-db_data:/data \
   -v $(pwd):/backup \
   alpine sh -c "cd /data && tar xzf /backup/guacamole_db_20250108.tar.gz"
 
 # Iniciar servicios
-docker compose up -d
+sudo docker compose up -d
 ```
 
 ### Backup Automatizado con Cron
@@ -852,16 +852,16 @@ crontab -e
 
 ```bash
 # Backup preventivo
-docker exec guacamole-db pg_dump -U guacamole_user guacamole_db | gzip > guacamole_backup_pre_update.sql.gz
+sudo docker exec guacamole-db pg_dump -U guacamole_user guacamole_db | gzip > guacamole_backup_pre_update.sql.gz
 
 # Descargar nuevas imágenes
-docker compose pull
+sudo docker compose pull
 
 # Recrear contenedores
-docker compose up -d
+sudo docker compose up -d
 
 # Verificar logs
-docker compose logs -f
+sudo docker compose logs -f
 ```
 
 ### Actualización con Watchtower
@@ -870,7 +870,7 @@ Watchtower puede actualizar automáticamente los contenedores de Guacamole:
 
 ```bash
 # Iniciar Watchtower con monitoreo de Guacamole
-docker run -d \
+sudo docker run -d \
   --name watchtower \
   -v /var/run/docker.sock:/var/run/docker.sock \
   containrrr/watchtower \
@@ -887,7 +887,7 @@ Si surge algún problema tras la actualización:
 
 ```bash
 # Detener servicios
-docker compose down
+sudo docker compose down
 
 
 # Especificar versión anterior en docker-compose.yml
@@ -897,7 +897,7 @@ docker compose down
 cat guacamole_backup_pre_update.sql.gz | gunzip | docker exec -i guacamole-db psql -U guacamole_user -d guacamole_db
 
 # Iniciar con versión anterior
-docker compose up -d
+sudo docker compose up -d
 ```
 
 ## Solución de Problemas
@@ -909,24 +909,24 @@ docker compose up -d
 **Solución**:
 ```bash
 # Detener servicios
-docker compose down
+sudo docker compose down
 
 # Eliminar volumen
-docker volume rm guacamole-db_data
+sudo docker volume rm guacamole-db_data
 
 # Verificar que existe el script en el host
 ls -la /opt/stacks/guacamole/initdb/
 
 # Si no existe, generarlo:
-docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > /tmp/initdb.sql
+sudo docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > /tmp/initdb.sql
 sudo mv /tmp/initdb.sql /opt/stacks/guacamole/initdb/
 sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
 
 # Reiniciar (inicialización automática)
-docker compose up -d
+sudo docker compose up -d
 
 # Verificar logs
-docker logs guacamole-db
+sudo docker logs guacamole-db
 ```
 
 ### Error de Autenticación PostgreSQL
@@ -943,10 +943,10 @@ cat .env | grep POSTGRES
 # Asegurar que POSTGRES_PASSWORD es idéntica en todas las referencias
 
 # Si es necesario, recrear con nueva contraseña:
-docker compose down
-docker volume rm guacamole-db_data
+sudo docker compose down
+sudo docker volume rm guacamole-db_data
 # Editar .env con nueva contraseña
-docker compose up -d
+sudo docker compose up -d
 ```
 
 ### Guacamole No Puede Conectar con guacd
@@ -956,18 +956,18 @@ docker compose up -d
 **Solución**:
 ```bash
 # Verificar que guacd está corriendo
-docker ps | grep guacd
+sudo docker ps | grep guacd
 
 # Verificar logs de guacd
-docker logs guacd
+sudo docker logs guacd
 
 # Verificar conectividad desde guacamole
-docker exec -it guacamole ping guacd
+sudo docker exec -it guacamole ping guacd
 
 # Reiniciar servicios en orden
-docker compose restart guacd
+sudo docker compose restart guacd
 sleep 5
-docker compose restart guacamole
+sudo docker compose restart guacamole
 ```
 
 ### Conexión RDP Falla
@@ -1065,18 +1065,18 @@ docker compose restart guacamole
 
 ```bash
 # Logs de todos los servicios
-docker compose logs -f
+sudo docker compose logs -f
 
 # Logs de servicio específico
-docker logs -f guacamole
-docker logs -f guacd
-docker logs -f guacamole-db
+sudo docker logs -f guacamole
+sudo docker logs -f guacd
+sudo docker logs -f guacamole-db
 
 # Logs con timestamps
-docker logs -f --timestamps guacamole
+sudo docker logs -f --timestamps guacamole
 
 # Últimas 100 líneas
-docker logs --tail 100 guacamole
+sudo docker logs --tail 100 guacamole
 ```
 
 ## Referencias
