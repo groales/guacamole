@@ -121,7 +121,7 @@ sudo docker compose up -d
 
 Despliegue mediante interfaz web de Portainer usando stacks.
 
-**📖 Documentación completa**: [Guía de Despliegue con Portainer](https://git.ictiberia.com/groales/guacamole/-/wikis/Portainer)
+**📖 Documentación completa**: [Guía de Despliegue con Portainer](https://git.ictiberia.com/groales/guacamole/wiki/Portainer)
 
 #### 2.1. Método Git (Recomendado)
 
@@ -161,7 +161,7 @@ Guacamole **debe estar detrás de un proxy inverso** para acceso HTTPS con certi
 
 ### Traefik
 
-**📖 Documentación completa**: [Guía de Configuración con Traefik](https://git.ictiberia.com/groales/guacamole/-/wikis/Traefik)
+**📖 Documentación completa**: [Guía de Configuración con Traefik](https://git.ictiberia.com/groales/guacamole/wiki/Traefik)
 
 **Características**:
 - Certificados SSL automáticos (Let's Encrypt)
@@ -176,7 +176,7 @@ cp docker-compose.override.traefik.yml.example docker-compose.override.yml
 
 ### Nginx Proxy Manager
 
-**📖 Documentación completa**: [Guía de Configuración con NPM](https://git.ictiberia.com/groales/guacamole/-/wikis/NPM)
+**📖 Documentación completa**: [Guía de Configuración con NPM](https://git.ictiberia.com/groales/guacamole/wiki/NPM)
 
 **Características**:
 - Interfaz web para gestión de proxies
@@ -194,13 +194,13 @@ Toda la documentación de configuración y administración está disponible en l
 
 | Tema | Descripción | Enlace |
 |------|-------------|--------|
-| **Configuración Inicial** | Cambiar contraseña, crear usuarios, permisos | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/-/wikis/Configuración-Inicial) |
-| **Crear Conexiones** | RDP, VNC, SSH, parámetros avanzados | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/-/wikis/Conexiones) |
-| **Gestión de Usuarios** | Permisos, restricciones, grupos | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/-/wikis/Administración) |
-| **Grabación de Sesiones** | Configuración, reproducción, auditoría | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/-/wikis/Grabación-de-Sesiones) |
-| **Backup y Restauración** | pg_dump, volúmenes, automatización | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/-/wikis/Backup-y-Restauración) |
-| **Actualización** | Manual, Watchtower, rollback | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/-/wikis/Actualización) |
-| **Solución de Problemas** | Errores comunes, logs, troubleshooting | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/-/wikis/Solución-de-Problemas) |
+| **Configuración Inicial** | Cambiar contraseña, crear usuarios, permisos | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Configuración-Inicial) |
+| **Crear Conexiones** | RDP, VNC, SSH, parámetros avanzados | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Conexiones) |
+| **Gestión de Usuarios** | Permisos, restricciones, grupos | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Administración) |
+| **Grabación de Sesiones** | Configuración, reproducción, auditoría | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Grabación-de-Sesiones) |
+| **Backup y Restauración** | pg_dump, volúmenes, automatización | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Backup-y-Restauración) |
+| **Actualización** | Manual, Watchtower, rollback | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Actualización) |
+| **Solución de Problemas** | Errores comunes, logs, troubleshooting | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Solución-de-Problemas) |
 
 ### 🔍 Ver Logs
 
@@ -222,7 +222,7 @@ sudo docker logs -f guacamole-db
 - **Docker Hub - Guacamole**: https://hub.docker.com/r/guacamole/guacamole
 - **Docker Hub - guacd**: https://hub.docker.com/r/guacamole/guacd
 - **GitHub**: https://github.com/apache/guacamole-server
-- **Wiki del Proyecto**: https://git.ictiberia.com/groales/guacamole/-/wikis/home
+- **Wiki del Proyecto**: https://git.ictiberia.com/groales/guacamole/wiki
 
 ---
 
