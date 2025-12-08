@@ -191,8 +191,6 @@ Copia el contenido de `initdb.sql` a `/opt/stacks/guacamole/initdb/initdb.sql` e
 4. **Web editor**: Pega el siguiente `docker-compose.yml`:
 
 ```yaml
-version: '3.8'
-
 services:
   guacd:
     container_name: guacd
@@ -334,8 +332,6 @@ Este método usa un contenedor temporal para generar el script automáticamente.
 **Stack compose**:
 
 ```yaml
-version: '3.8'
-
 services:
   guacamole-init:
     image: guacamole/guacamole:latest
