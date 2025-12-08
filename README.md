@@ -161,907 +161,185 @@ Para cambiar la contraseña:
 
 ## Despliegue con Portainer
 
-Portainer permite desplegar Guacamole mediante stacks, pero requiere manejo especial para la inicialización de la base de datos.
+Guacamole puede desplegarse en Portainer usando stacks con dos métodos de inicialización de base de datos.
 
-### Método 1: Pre-generar Script de Inicialización (Recomendado)
+**📖 Documentación completa**: [Guía de Despliegue con Portainer](https://git.ictiberia.com/groales/guacamole.wiki/Portainer)
 
-Este método genera el script SQL antes de crear el stack en Portainer.
+Métodos disponibles:
+- **Método 1 (Recomendado)**: Pre-generar script de inicialización en `/opt/stacks/guacamole/initdb`
+- **Método 2**: Inicialización manual post-despliegue
 
-#### Paso 1: Generar Script SQL Localmente
-
-En tu máquina o servidor, ejecuta:
-
-```bash
-sudo docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
-```
-
-#### Paso 2: Crear Directorio en el Host
-
-En el servidor donde corre Portainer, crea el directorio de inicialización:
-
-```bash
-# Crear directorio de configuración
-mkdir -p /opt/stacks/guacamole/initdb
-
-# Copiar el script generado
-# (usar SCP, SFTP, o copiar el contenido manualmente)
-```
-
-Copia el contenido de `initdb.sql` a `/opt/stacks/guacamole/initdb/initdb.sql` en el servidor.
-
-#### Paso 3: Crear Stack en Portainer
-
-1. **Portainer** → **Stacks** → **Add stack**
-2. **Name**: `guacamole`
-3. **Build method**: Web editor
-4. **Web editor**: Pega el siguiente `docker-compose.yml`:
-
-```yaml
-services:
-  guacd:
-    container_name: guacd
-    image: guacamole/guacd:latest
-    restart: unless-stopped
-    networks:
-      - guacamole-internal
-
-  guacamole-db:
-    container_name: guacamole-db
-    image: postgres:18-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-guacamole_db}
-      POSTGRES_USER: ${POSTGRES_USER:-guacamole_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - guacamole-db_data:/var/lib/postgresql
-      - /opt/stacks/guacamole/initdb:/docker-entrypoint-initdb.d:ro
-    networks:
-      - guacamole-internal
-
-  guacamole:
-    container_name: guacamole
-    image: guacamole/guacamole:latest
-    restart: unless-stopped
-    depends_on:
-      - guacd
-      - guacamole-db
-    environment:
-      GUACD_HOSTNAME: guacd
-      GUACD_PORT: 4822
-      POSTGRESQL_HOSTNAME: guacamole-db
-      POSTGRESQL_DATABASE: ${POSTGRES_DB:-guacamole_db}
-      POSTGRESQL_USERNAME: ${POSTGRES_USER:-guacamole_user}
-      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
-      REMOTE_IP_VALVE_ENABLED: 'true'
-    ports:
-      - "8080:8080"
-    networks:
-      - proxy
-      - guacamole-internal
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.guacamole.rule=Host(`${DOMAIN_HOST}`)"
-      - "traefik.http.routers.guacamole.entrypoints=websecure"
-      - "traefik.http.routers.guacamole.tls.certresolver=letsencrypt"
-      - "traefik.http.services.guacamole.loadbalancer.server.port=8080"
-
-networks:
-  proxy:
-    external: true
-  guacamole-internal:
-    name: guacamole-internal
-
-volumes:
-  guacamole-db_data:
-    name: guacamole-db_data
-```
-
-5. **Environment variables** (sección inferior):
-   ```
-   POSTGRES_PASSWORD=tu_contraseña_segura_aquí
-   DOMAIN_HOST=guacamole.example.com
-   ```
-
-6. Click en **Deploy the stack**
-
-#### Paso 4: Verificar Inicialización
-
-```bash
-# Ver logs de PostgreSQL
-sudo docker logs guacamole-db
-
-# Verificar tablas creadas
-sudo docker exec -it guacamole-db psql -U guacamole_user -d guacamole_db -c "\dt"
-```
-
-Deberías ver tablas como: `guacamole_user`, `guacamole_connection`, `guacamole_connection_group`, etc.
-
-#### Paso 5: Acceso Inicial
-
-1. Accede a: `https://guacamole.example.com/guacamole/`
-2. Login: `guacadmin` / `guacadmin`
-3. **IMPORTANTE**: Cambia la contraseña inmediatamente
+La wiki incluye:
+- Pasos detallados para ambos métodos
+- Ejemplos completos de docker-compose
+- Troubleshooting específico de Portainer
+- Verificación de inicialización
+- Comparativa de métodos
 
 ---
 
-### Método 2: Inicialización Manual Post-Despliegue
+## Despliegue con Traefik
 
-Si ya desplegaste el stack sin el script de inicialización, puedes inicializar la base de datos manualmente.
+Despliegue con proxy reverso Traefik, SSL automático con Let's Encrypt y enrutamiento por dominio.
 
-#### Paso 1: Generar Script SQL
+**📖 Documentación completa**: [Guía de Despliegue con Traefik](https://git.ictiberia.com/groales/guacamole.wiki/Traefik)
 
-```bash
-sudo docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
-```
-
-#### Paso 2: Copiar Script al Contenedor
-
-```bash
-sudo docker cp initdb.sql guacamole-db:/tmp/initdb.sql
-```
-
-#### Paso 3: Ejecutar Script en PostgreSQL
-
-```bash
-sudo docker exec -i guacamole-db psql -U guacamole_user -d guacamole_db < initdb.sql
-```
-
-O alternativamente:
-
-```bash
-cat initdb.sql | docker exec -i guacamole-db psql -U guacamole_user -d guacamole_db
-```
-
-#### Paso 4: Reiniciar Guacamole
-
-En Portainer:
-1. **Stacks** → **guacamole**
-2. Click en el contenedor `guacamole`
-3. Click en **Restart**
-
-O desde CLI:
-
-```bash
-sudo docker restart guacamole
-```
-
-#### Paso 5: Verificar
-
-Accede a `https://guacamole.example.com/guacamole/` y login con `guacadmin` / `guacadmin`.
-
----
-
-### Troubleshooting en Portainer
-
-#### Error: "relation 'guacamole_user' does not exist"
-
-La base de datos no se inicializó. Solución:
-
-1. **Portainer** → **Stacks** → **guacamole** → **Stop stack**
-2. **Volumes** → Buscar `guacamole-db_data` → **Remove**
-3. Asegúrate de que `/opt/stacks/guacamole/initdb/initdb.sql` existe en el host
-4. **Stacks** → **guacamole** → **Start stack**
-
-#### Ver Logs en Portainer
-
-1. **Stacks** → **guacamole**
-2. Click en el contenedor (ej. `guacamole-db`)
-3. Click en **Logs**
-4. Busca: "PostgreSQL init process complete; ready for start up"
-
-#### Verificar Variables de Entorno
-
-1. **Stacks** → **guacamole** → **Editor**
-2. Revisa sección "Environment variables"
-3. Asegúrate de que `POSTGRES_PASSWORD` está configurada
-
----
-
-## Despliegue con Traefik### Paso 1: Crear Archivo de Variables de Entorno
-
-```bash
-cp .env.example .env
-nano .env
-```
-
-Configura las variables obligatorias:
-
-```env
-# Contraseña de base de datos (genera una segura)
-POSTGRES_PASSWORD='tu_contraseña_segura_aquí'
-
-# Dominio para Traefik
-DOMAIN_HOST=guacamole.example.com
-```
-
-**Generar contraseña segura**:
-```bash
-openssl rand -base64 32
-```
-
-### Paso 2: Generar Script de Inicialización de Base de Datos
-
-**CRÍTICO**: Este paso debe realizarse ANTES de iniciar los contenedores:
-
-```bash
-# Generar script SQL de inicialización
-sudo docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
-
-# Crear directorio en el host y mover script
-sudo mkdir -p /opt/stacks/guacamole/initdb
-sudo mv initdb.sql /opt/stacks/guacamole/initdb/
-sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
-```
-
-### Paso 3: Configurar Traefik
-
-```bash
-cp docker-compose.override.traefik.yml.example docker-compose.override.yml
-```
-
-El archivo incluye:
-- Puerto `8080` para el servicio Guacamole
+Características:
+- Proxy reverso con Traefik
+- Certificados SSL automáticos (Let's Encrypt)
 - Enrutamiento por dominio
-- Certificado SSL automático (Let's Encrypt)
+- Configuración de labels para contenedores
 
-### Paso 4: Iniciar Servicios
-
-```bash
-sudo docker compose up -d
-```
-
-### Paso 5: Verificar Despliegue
-
-```bash
-# Ver estado de contenedores
-sudo docker compose ps
-
-# Ver logs
-sudo docker compose logs -f
-
-# Verificar inicialización de base de datos
-sudo docker logs guacamole-db 2>&1 | grep "ready for start up"
-```
-
-### Paso 6: Acceder a Guacamole
-
-1. Abre tu navegador en: `https://guacamole.example.com/guacamole/`
-2. Login con credenciales por defecto:
-   - Usuario: `guacadmin`
-   - Contraseña: `guacadmin`
-3. **IMPORTANTE**: Cambia la contraseña inmediatamente (ver sección "Credenciales por Defecto")
+La guía incluye:
+- Configuración paso a paso de variables y overrides
+- Generación de script de inicialización
+- Configuración de redes Docker
+- Verificación de despliegue
+- Troubleshooting específico de Traefik
 
 ## Despliegue desde CLI
 
-### Requisitos Previos
+Despliegue tradicional usando Docker Compose desde línea de comandos.
 
-1. **Crear red Docker para proxy**:
-   ```bash
-   docker network create proxy
-   ```
-
-2. **Generar script de inicialización de base de datos**:
-   ```bash
-   docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
-   sudo mkdir -p /opt/stacks/guacamole/initdb
-   sudo mv initdb.sql /opt/stacks/guacamole/initdb/
-   sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
-   ```
-
-### Paso 1: Clonar Repositorio
+### Quick Start
 
 ```bash
+# 1. Crear red Docker
+sudo docker network create proxy
+
+# 2. Generar script de inicialización
+sudo docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
+sudo mkdir -p /opt/stacks/guacamole/initdb
+sudo mv initdb.sql /opt/stacks/guacamole/initdb/
+sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
+
+# 3. Clonar repositorio
 cd /opt
 git clone https://git.ictiberia.com/groales/guacamole.git
 cd guacamole
-```
 
-### Paso 2: Configurar Variables de Entorno
-
-```bash
+# 4. Configurar variables
 cp .env.example .env
-nano .env
-```
+nano .env  # Configurar POSTGRES_PASSWORD y DOMAIN_HOST
 
-Configurar variables obligatorias:
-
-```env
-# === Base de Datos (REQUERIDA) ===
-POSTGRES_PASSWORD='contraseña_generada_con_openssl'
-
-# === Dominio (REQUERIDO para Traefik) ===
-DOMAIN_HOST=guacamole.example.com
-```
-
-**Generar contraseña segura**:
-```bash
-openssl rand -base64 32
-```
-
-### Paso 3: Configurar Override de Traefik
-
-```bash
+# 5. Configurar override (si usas Traefik)
 cp docker-compose.override.traefik.yml.example docker-compose.override.yml
-```
 
-### Paso 4: Verificar Archivos de Inicialización
-
-```bash
-# Verificar que existe el script SQL en el host
-ls -la /opt/stacks/guacamole/initdb/
-
-# Deberías ver: initdb.sql
-```
-
-### Paso 5: Iniciar Servicios
-
-```bash
+# 6. Iniciar servicios
 sudo docker compose up -d
-```
 
-### Paso 6: Verificar Despliegue
-
-```bash
-# Ver estado
+# 7. Verificar
 sudo docker compose ps
-
-# Ver logs de inicialización
 sudo docker logs guacamole-db
-sudo docker logs guacamole
-
-# Verificar conectividad interna
-sudo docker exec -it guacamole-db psql -U guacamole_user -d guacamole_db -c "\dt"
-# Deberías ver las tablas: guacamole_user, guacamole_connection, etc.
 ```
 
-### Paso 7: Configurar DNS
+**Acceso**: `https://guacamole.example.com/guacamole/` (usuario: `guacadmin`, password: `guacadmin`)
 
-Apunta tu dominio al servidor:
-
-```
-guacamole.example.com    A    IP_DEL_SERVIDOR
-```
-
-### Paso 8: Acceso Inicial
-
-1. Accede a: `https://guacamole.example.com/guacamole/`
-2. Login con credenciales por defecto:
-   - Usuario: `guacadmin`
-   - Contraseña: `guacadmin`
-3. **IMPORTANTE**: Cambia la contraseña inmediatamente
-
-### Paso 9: Primera Configuración
-
-1. **Cambiar contraseña de administrador**:
-   - Click en usuario (esquina superior derecha) → Settings → Preferences
-   - Change Password → Ingresar nueva contraseña
-
-2. **Crear usuarios adicionales**:
-   - Settings → Users → New User
-   - Configurar permisos apropiados
-
-3. **Crear primera conexión** (ver sección "Crear Conexiones")
+**📖 Documentación completa**: Ver wiki para configuración detallada
 
 ## Configuración Inicial
 
-### Cambiar Contraseña de Administrador
+Accede con las credenciales por defecto (`guacadmin` / `guacadmin`) y cambia la contraseña inmediatamente.
 
-**CRÍTICO**: Cambia la contraseña por defecto inmediatamente:
+**📖 Documentación completa**: [Guía de Configuración Inicial](https://git.ictiberia.com/groales/guacamole.wiki/Configuración-Inicial)
 
-1. Click en tu usuario (esquina superior derecha)
-2. Selecciona "Settings"
-3. Click en "Preferences"
-4. Click en "Change Password"
-5. Ingresa:
-   - Current password: `guacadmin`
-   - New password: tu nueva contraseña segura
-   - Confirm password: repetir nueva contraseña
-6. Click en "Update Password"
-
-### Crear Usuarios Adicionales
-
-1. Click en tu usuario → Settings → Users
-2. Click en "New User"
-3. Configurar:
-   - **Username**: nombre de usuario
-   - **Password**: contraseña segura
-   - **Re-enter password**: confirmar contraseña
-4. Permisos:
-   - **Login from**: Restricción por IP (opcional)
-   - **Valid from/until**: Ventana de acceso temporal (opcional)
-   - **Permissions**: Permisos administrativos (opcional)
-5. Click en "Save"
-
-### Configurar Grupos
-
-Organiza usuarios en grupos para facilitar la gestión:
-
-1. Settings → Groups → New Group
-2. Configurar:
-   - **Group name**: nombre descriptivo
-   - **Group permissions**: Permisos del grupo
-   - **Member users**: Añadir usuarios al grupo
-3. Click en "Save"
+La guía incluye:
+- Cambio de contraseña de administrador
+- Creación de usuarios adicionales
+- Configuración de grupos
+- Gestión de permisos
+- Restricciones de acceso
 
 ## Crear Conexiones
 
-### Conexión RDP (Windows)
+Guacamole soporta múltiples protocolos: RDP (Windows), VNC (Linux), SSH (Terminal), Kubernetes, Telnet.
 
-1. Settings → Connections → New Connection
-2. Configurar:
-   ```
-   Name: Windows Server 2022
-   Location: ROOT
-   Protocol: RDP
-   
-   NETWORK:
-   Hostname: 192.168.1.100
-   Port: 3389
-   
-   AUTHENTICATION:
-   Username: Administrator
-   Password: contraseña_windows
-   Domain: (opcional)
-   
-   DISPLAY:
-   Color depth: True color (32-bit)
-   Resolution: Optimal
-   
-   ADVANCED:
-   Security mode: NLA (Network Level Authentication)
-   Ignore server certificate: true (si usa certificado autofirmado)
-   Enable audio: Enabled
-   ```
-3. Click en "Save"
+**📖 Documentación completa**: [Guía de Creación de Conexiones](https://git.ictiberia.com/groales/guacamole.wiki/Conexiones)
 
-### Conexión VNC (Linux)
-
-1. Settings → Connections → New Connection
-2. Configurar:
-   ```
-   Name: Ubuntu Desktop
-   Protocol: VNC
-   
-   NETWORK:
-   Hostname: 192.168.1.101
-   Port: 5901
-   
-   AUTHENTICATION:
-   Password: contraseña_vnc
-   
-   DISPLAY:
-   Color depth: True color (24-bit)
-   ```
-3. Click en "Save"
-
-### Conexión SSH (Terminal)
-
-1. Settings → Connections → New Connection
-2. Configurar:
-   ```
-   Name: Rocky Linux Server
-   Protocol: SSH
-   
-   NETWORK:
-   Hostname: 192.168.1.102
-   Port: 22
-   
-   AUTHENTICATION:
-   Username: admin
-   Password: contraseña_ssh
-   (o usar Private key para autenticación por clave)
-   
-   TERMINAL:
-   Color scheme: Gray on black
-   Font size: 12
-   ```
-3. Click en "Save"
-
-### Compartir Conexiones con Usuarios
-
-Para permitir que otros usuarios accedan a una conexión:
-
-1. Settings → Connections → Seleccionar conexión
-2. Tab "Permissions"
-3. Seleccionar usuarios o grupos
-4. Asignar permisos:
-   - **Read**: Ver la conexión
-   - **Update**: Modificar configuración
-   - **Delete**: Eliminar conexión
-   - **Administer**: Gestionar permisos
-5. Click en "Save"
+La guía incluye:
+- Configuración detallada de conexiones RDP
+- Configuración de conexiones VNC
+- Configuración de conexiones SSH
+- Parámetros avanzados por protocolo
+- Compartir conexiones con usuarios
+- Grupos de conexiones
 
 ## Gestión de Usuarios
 
-### Permisos de Usuario
+Administra usuarios, permisos, restricciones de acceso y configuraciones de seguridad.
 
-Tipos de permisos disponibles:
+**📖 Documentación completa**: [Guía de Administración de Usuarios](https://git.ictiberia.com/groales/guacamole.wiki/Administración)
 
-- **System Permissions**:
-  - Create connections
-  - Create connection groups
-  - Create sharing profiles
-  - Create users
-  - Create user groups
-  
-- **Connection Permissions**:
-  - Read: Ver y usar conexión
-  - Update: Modificar conexión
-  - Delete: Eliminar conexión
-  - Administer: Gestionar permisos de conexión
-
-### Restricciones de Acceso
-
-**Por dirección IP**:
-```
-Settings → Users → Seleccionar usuario → Login from: 192.168.1.0/24
-```
-
-**Por horario**:
-```
-Settings → Users → Seleccionar usuario
-Valid from: 2025-01-01 09:00:00
-Valid until: 2025-12-31 18:00:00
-```
-
-### Autenticación de Dos Factores (TOTP)
-
-Requiere extensión adicional (no incluida por defecto). Ver documentación oficial para configuración avanzada.
+La guía incluye:
+- Tipos de permisos (sistema y conexión)
+- Restricciones de acceso por IP
+- Restricciones de acceso por horario
+- Grupos de usuarios
+- Mejores prácticas de seguridad
 
 ## Grabación de Sesiones
 
-### Habilitar Grabación en Conexión
+Guacamole puede grabar sesiones RDP, VNC y SSH en archivos de video reproducibles.
 
-1. Settings → Connections → Seleccionar conexión
-2. Tab "Screen Recording"
-3. Configurar:
-   ```
-   Recording path: /recordings/${GUAC_USERNAME}/${GUAC_CONNECTION_NAME}
-   Recording name: ${GUAC_DATE}_${GUAC_TIME}
-   Create recording path: Enabled
-   ```
-4. Click en "Save"
+**📖 Documentación completa**: [Guía de Grabación de Sesiones](https://git.ictiberia.com/groales/guacamole.wiki/Grabación-de-Sesiones)
 
-### Configurar Volumen para Grabaciones
+La guía incluye:
+- Habilitar grabación en conexiones
+- Configuración de volúmenes para persistencia
+- Reproducción de sesiones grabadas
+- Gestión de espacio en disco
+- Mejores prácticas de auditoría
 
-Editar `docker-compose.yml` para persistir grabaciones:
-
-```yaml
-services:
-  guacamole:
-    volumes:
-      - guacamole_recordings:/recordings
-
-volumes:
-  guacamole_recordings:
-    name: guacamole_recordings
-```
-
-Reiniciar servicios:
-```bash
-sudo docker compose up -d
-```
-
-### Acceder a Grabaciones
-
-Las grabaciones se almacenan en formato Guacamole (`.guac`) y requieren reproducción con herramientas específicas o conversión a formatos estándar.
-
-**Listar grabaciones**:
-```bash
-sudo docker exec -it guacamole ls -lh /recordings/
-```
-
-**Exportar grabaciones**:
-```bash
-sudo docker cp guacamole:/recordings/ ./recordings_backup/
-```
+---
 
 ## Backup y Restauración
 
-### Backup de Base de Datos
+Estrategias de backup de base de datos, configuraciones y grabaciones de sesiones.
 
-**Método 1: pg_dump**
+**📖 Documentación completa**: [Guía de Backup y Restauración](https://git.ictiberia.com/groales/guacamole.wiki/Backup-y-Restauración)
 
-```bash
-# Backup completo
-sudo docker exec guacamole-db pg_dump -U guacamole_user guacamole_db > guacamole_backup_$(date +%Y%m%d).sql
-
-# Backup comprimido
-sudo docker exec guacamole-db pg_dump -U guacamole_user guacamole_db | gzip > guacamole_backup_$(date +%Y%m%d).sql.gz
-```
-
-**Método 2: Backup del volumen Docker**
-
-```bash
-# Detener Guacamole (mantener DB activa)
-sudo docker compose stop guacamole
-
-# Backup del volumen
-sudo docker run --rm \
-  -v guacamole-db_data:/data \
-  -v $(pwd):/backup \
-  alpine tar czf /backup/guacamole_db_$(date +%Y%m%d).tar.gz -C /data .
-
-# Reiniciar Guacamole
-sudo docker compose start guacamole
-```
-
-### Restauración de Base de Datos
-
-**Método 1: Desde dump SQL**
-
-```bash
-# Detener servicios
-sudo docker compose down
-
-# Eliminar volumen antiguo
-sudo docker volume rm guacamole-db_data
-
-# Iniciar solo la base de datos
-sudo docker compose up -d guacamole-db
-
-# Esperar a que PostgreSQL esté listo
-sleep 10
-
-# Restaurar backup
-cat guacamole_backup_20250108.sql | docker exec -i guacamole-db psql -U guacamole_user -d guacamole_db
-
-# Iniciar todos los servicios
-sudo docker compose up -d
-```
-
-**Método 2: Desde volumen**
-
-```bash
-# Detener servicios
-sudo docker compose down
-
-# Eliminar volumen antiguo
-sudo docker volume rm guacamole-db_data
-
-# Crear nuevo volumen
-sudo docker volume create guacamole-db_data
-
-# Restaurar datos
-sudo docker run --rm \
-  -v guacamole-db_data:/data \
-  -v $(pwd):/backup \
-  alpine sh -c "cd /data && tar xzf /backup/guacamole_db_20250108.tar.gz"
-
-# Iniciar servicios
-sudo docker compose up -d
-```
-
-### Backup Automatizado con Cron
-
-```bash
-# Editar crontab
-crontab -e
-
-# Añadir backup diario a las 2 AM
-0 2 * * * cd /opt/guacamole && docker exec guacamole-db pg_dump -U guacamole_user guacamole_db | gzip > /opt/backups/guacamole_$(date +\%Y\%m\%d).sql.gz
-
-# Retención de 30 días
-0 3 * * * find /opt/backups/guacamole_*.sql.gz -mtime +30 -delete
-```
+La guía incluye:
+- Backup de base de datos (pg_dump y volumen Docker)
+- Restauración desde backups
+- Backup automatizado con cron
+- Estrategias de retención
+- Backup de grabaciones de sesiones
+- Escenarios de recuperación ante desastres
 
 ## Actualización
 
-### Actualización Manual
+Procedimientos para actualizar Guacamole a nuevas versiones de forma segura.
 
-```bash
-# Backup preventivo
-sudo docker exec guacamole-db pg_dump -U guacamole_user guacamole_db | gzip > guacamole_backup_pre_update.sql.gz
+**📖 Documentación completa**: [Guía de Actualización](https://git.ictiberia.com/groales/guacamole.wiki/Actualización)
 
-# Descargar nuevas imágenes
-sudo docker compose pull
-
-# Recrear contenedores
-sudo docker compose up -d
-
-# Verificar logs
-sudo docker compose logs -f
-```
-
-### Actualización con Watchtower
-
-Watchtower puede actualizar automáticamente los contenedores de Guacamole:
-
-```bash
-# Iniciar Watchtower con monitoreo de Guacamole
-sudo docker run -d \
-  --name watchtower \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  containrrr/watchtower \
-  --schedule "0 0 4 * * *" \
-  --cleanup \
-  guacd guacamole guacamole-db
-```
-
-**Nota**: La base de datos PostgreSQL generalmente no requiere actualizaciones frecuentes. Considera excluirla de Watchtower.
-
-### Rollback
-
-Si surge algún problema tras la actualización:
-
-```bash
-# Detener servicios
-sudo docker compose down
-
-
-# Especificar versión anterior en docker-compose.yml
-# guacamole/guacamole:1.5.4 (ejemplo)
-
-# Restaurar backup de base de datos si es necesario
-cat guacamole_backup_pre_update.sql.gz | gunzip | docker exec -i guacamole-db psql -U guacamole_user -d guacamole_db
-
-# Iniciar con versión anterior
-sudo docker compose up -d
-```
+La guía incluye:
+- Actualización manual paso a paso
+- Actualización automática con Watchtower
+- Procedimiento de rollback
+- Verificación post-actualización
+- Compatibilidad de versiones
+- Migraciones de base de datos
 
 ## Solución de Problemas
 
-### Base de Datos No Inicializada
+Resoluciones para problemas comunes de Guacamole.
 
-**Síntoma**: Error "relation ''guacamole_user'' does not exist"
+**📖 Documentación completa**: [Guía de Solución de Problemas](https://git.ictiberia.com/groales/guacamole.wiki/Solución-de-Problemas)
 
-**Solución**:
-```bash
-# Detener servicios
-sudo docker compose down
+### Problemas Comunes
 
-# Eliminar volumen
-sudo docker volume rm guacamole-db_data
+La wiki incluye soluciones detalladas para:
+- Base de datos no inicializada (`relation 'guacamole_user' does not exist`)
+- Errores de autenticación PostgreSQL
+- Problemas de conectividad con guacd
+- Fallos de conexión RDP
+- Fallos de conexión VNC
+- Problemas de transferencia de archivos
+- Rendimiento lento
+- Problemas de red y proxy
+- Errores de certificados SSL
 
-# Verificar que existe el script en el host
-ls -la /opt/stacks/guacamole/initdb/
-
-# Si no existe, generarlo:
-sudo docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > /tmp/initdb.sql
-sudo mv /tmp/initdb.sql /opt/stacks/guacamole/initdb/
-sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
-
-# Reiniciar (inicialización automática)
-sudo docker compose up -d
-
-# Verificar logs
-sudo docker logs guacamole-db
-```
-
-### Error de Autenticación PostgreSQL
-
-**Síntoma**: "FATAL: password authentication failed for user"
-
-**Causa**: Contraseña incorrecta o inconsistente
-
-**Solución**:
-```bash
-# Verificar variables en .env
-cat .env | grep POSTGRES
-
-# Asegurar que POSTGRES_PASSWORD es idéntica en todas las referencias
-
-# Si es necesario, recrear con nueva contraseña:
-sudo docker compose down
-sudo docker volume rm guacamole-db_data
-# Editar .env con nueva contraseña
-sudo docker compose up -d
-```
-
-### Guacamole No Puede Conectar con guacd
-
-**Síntoma**: Conexiones fallan inmediatamente
-
-**Solución**:
-```bash
-# Verificar que guacd está corriendo
-sudo docker ps | grep guacd
-
-# Verificar logs de guacd
-sudo docker logs guacd
-
-# Verificar conectividad desde guacamole
-sudo docker exec -it guacamole ping guacd
-
-# Reiniciar servicios en orden
-sudo docker compose restart guacd
-sleep 5
-sudo docker compose restart guacamole
-```
-
-### Conexión RDP Falla
-
-**Síntomas comunes**:
-- "The remote desktop server is currently unavailable"
-- "Security negotiation failed"
-
-**Soluciones**:
-
-1. **Verificar credenciales Windows**:
-   - Usuario y contraseña correctos
-   - Dominio (si aplica)
-
-2. **Verificar configuración de RDP en Windows**:
-   ```powershell
-   # En el servidor Windows, habilitar RDP:
-   Set-ItemProperty -Path ''HKLM:\System\CurrentControlSet\Control\Terminal Server'' -name "fDenyTSConnections" -value 0
-   Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-   ```
-
-3. **Ajustar modo de seguridad en Guacamole**:
-   - Conexión → Security mode: `Any` o `RDP`
-   - Ignore server certificate: `Enabled`
-
-### Conexión VNC Falla
-
-**Síntoma**: Pantalla negra o "Connection failed"
-
-**Soluciones**:
-
-1. **Verificar que VNC está corriendo**:
-   ```bash
-   # En el servidor Linux
-   vncserver -list
-   ```
-
-2. **Verificar puerto VNC**:
-   - Display :1 = Puerto 5901
-   - Display :2 = Puerto 5902
-
-3. **Verificar contraseña VNC**:
-   ```bash
-   vncpasswd
-   ```
-
-### Transferencia de Archivos No Funciona
-
-**Requisito**: Conexión debe soportar SFTP (para SSH/VNC) o RDP Drive (para RDP)
-
-**Para RDP**:
-1. Editar conexión → Enable drive
-2. Drive name: `SharedDrive`
-3. Drive path: `/drive` (ruta en contenedor)
-4. Configurar volumen en docker-compose.yml:
-   ```yaml
-   services:
-     guacamole:
-       volumes:
-         - guacamole_drives:/drive
-   ```
-
-**Para SSH/VNC**:
-1. Editar conexión → Enable SFTP
-2. SFTP hostname: IP del servidor
-3. SFTP port: 22
-4. SFTP username/password: credenciales SSH
-
-### Rendimiento Lento
-
-**Optimizaciones**:
-
-1. **Reducir calidad de color**:
-   - RDP: True color (24-bit) en lugar de 32-bit
-   - VNC: True color (24-bit)
-
-2. **Deshabilitar audio**:
-   - RDP: Audio → Disabled (si no es necesario)
-
-3. **Ajustar compresión**:
-   - VNC: Enable compression → Yes
-
-4. **Aumentar recursos de contenedor**:
-   ```yaml
-   services:
-     guacamole:
-       deploy:
-         resources:
-           limits:
-             cpus: ''2''
-             memory: 2G
-   ```
-
-### Ver Logs Detallados
+### Ver Logs
 
 ```bash
 # Logs de todos los servicios
@@ -1071,12 +349,6 @@ sudo docker compose logs -f
 sudo docker logs -f guacamole
 sudo docker logs -f guacd
 sudo docker logs -f guacamole-db
-
-# Logs con timestamps
-sudo docker logs -f --timestamps guacamole
-
-# Últimas 100 líneas
-sudo docker logs --tail 100 guacamole
 ```
 
 ## Referencias
