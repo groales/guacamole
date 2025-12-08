@@ -72,7 +72,7 @@ Apache Guacamole es un gateway de escritorio remoto sin cliente que soporta prot
 Ejecuta este comando para generar el script SQL necesario:
 
 ```bash
-docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgres > initdb.sql
+docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
 ```
 
 Este comando extrae el esquema de base de datos del contenedor de Guacamole.
@@ -172,7 +172,7 @@ Este método genera el script SQL antes de crear el stack en Portainer.
 En tu máquina o servidor, ejecuta:
 
 ```bash
-docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgres > initdb.sql
+docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
 ```
 
 #### Paso 2: Crear Directorio en el Host
@@ -291,7 +291,7 @@ Si ya desplegaste el stack sin el script de inicialización, puedes inicializar 
 #### Paso 1: Generar Script SQL
 
 ```bash
-docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgres > initdb.sql
+docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
 ```
 
 #### Paso 2: Copiar Script al Contenedor
@@ -385,7 +385,7 @@ openssl rand -base64 32
 
 ```bash
 # Generar script SQL de inicialización
-docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgres > initdb.sql
+docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
 
 # Crear directorio en el host y mover script
 sudo mkdir -p /opt/stacks/guacamole/initdb
@@ -442,7 +442,7 @@ docker logs guacamole-db 2>&1 | grep "ready for start up"
 
 2. **Generar script de inicialización de base de datos**:
    ```bash
-   docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgres > initdb.sql
+   docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
    sudo mkdir -p /opt/stacks/guacamole/initdb
    sudo mv initdb.sql /opt/stacks/guacamole/initdb/
    sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
@@ -917,7 +917,7 @@ docker volume rm guacamole-db_data
 ls -la /opt/stacks/guacamole/initdb/
 
 # Si no existe, generarlo:
-docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgres > /tmp/initdb.sql
+docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > /tmp/initdb.sql
 sudo mv /tmp/initdb.sql /opt/stacks/guacamole/initdb/
 sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
 
