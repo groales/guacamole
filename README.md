@@ -100,7 +100,7 @@ Una vez creado el archivo de inicialización, procede con el despliegue normal:
 # Copiar archivo de variables de entorno
 cp .env.example .env
 
-# Editar .env y configurar POSTGRES_PASSWORD
+# Editar .env y configurar POSTGRESQL_PASSWORD
 nano .env
 
 # Iniciar servicios
@@ -157,7 +157,7 @@ Para cambiar la contraseña:
 
 **Error: "FATAL: password authentication failed"**
 - La contraseña en `.env` no coincide con la configurada
-- Solución: Verifica que `POSTGRES_PASSWORD` sea idéntica en todas las variables
+- Solución: Verifica que `POSTGRESQL_PASSWORD` sea idéntica en todas las variables
 
 ## Despliegue con Portainer
 
@@ -210,9 +210,9 @@ services:
     image: postgres:18-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-guacamole_db}
-      POSTGRES_USER: ${POSTGRES_USER:-guacamole_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE:-guacamole_db}
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME:-guacamole_user}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
     volumes:
       - guacamole-db_data:/var/lib/postgresql
       - /opt/stacks/guacamole/initdb:/docker-entrypoint-initdb.d:ro
@@ -228,10 +228,10 @@ services:
       - guacamole-db
     environment:
       GUACD_HOSTNAME: guacd
-      POSTGRES_HOSTNAME: guacamole-db
-      POSTGRES_DATABASE: ${POSTGRES_DB:-guacamole_db}
-      POSTGRES_USER: ${POSTGRES_USER:-guacamole_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRESQL_HOSTNAME: guacamole-db
+      POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE:-guacamole_db}
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME:-guacamole_user}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
       REMOTE_IP_VALVE_ENABLED: 'true'
     ports:
       - "8080:8080"
@@ -258,7 +258,7 @@ volumes:
 
 5. **Environment variables** (sección inferior):
    ```
-   POSTGRES_PASSWORD=tu_contraseña_segura_aquí
+   POSTGRESQL_PASSWORD=tu_contraseña_segura_aquí
    DOMAIN_HOST=guacamole.example.com
    ```
 
@@ -353,7 +353,7 @@ La base de datos no se inicializó. Solución:
 
 1. **Stacks** → **guacamole** → **Editor**
 2. Revisa sección "Environment variables"
-3. Asegúrate de que `POSTGRES_PASSWORD` está configurada
+3. Asegúrate de que `POSTGRESQL_PASSWORD` está configurada
 
 ---
 
@@ -368,7 +368,7 @@ Configura las variables obligatorias:
 
 ```env
 # Contraseña de base de datos (genera una segura)
-POSTGRES_PASSWORD='tu_contraseña_segura_aquí'
+POSTGRESQL_PASSWORD='tu_contraseña_segura_aquí'
 
 # Dominio para Traefik
 DOMAIN_HOST=guacamole.example.com
@@ -467,7 +467,7 @@ Configurar variables obligatorias:
 
 ```env
 # === Base de Datos (REQUERIDA) ===
-POSTGRES_PASSWORD='contraseña_generada_con_openssl'
+POSTGRESQL_PASSWORD='contraseña_generada_con_openssl'
 
 # === Dominio (REQUERIDO para Traefik) ===
 DOMAIN_HOST=guacamole.example.com
@@ -939,7 +939,7 @@ docker logs guacamole-db
 # Verificar variables en .env
 cat .env | grep POSTGRES
 
-# Asegurar que POSTGRES_PASSWORD es idéntica en todas las referencias
+# Asegurar que POSTGRESQL_PASSWORD es idéntica en todas las referencias
 
 # Si es necesario, recrear con nueva contraseña:
 docker compose down

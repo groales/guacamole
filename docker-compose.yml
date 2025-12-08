@@ -11,9 +11,9 @@ services:
     image: postgres:18-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-guacamole_db}
-      POSTGRES_USER: ${POSTGRES_USER:-guacamole_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE:-guacamole_db}
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME:-guacamole_user}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
     volumes:
       - guacamole-db_data:/var/lib/postgresql
       - /opt/stacks/guacamole/initdb:/docker-entrypoint-initdb.d:ro
@@ -30,10 +30,10 @@ services:
     environment:
       GUACD_HOSTNAME: guacd
       GUACD_PORT: 4822
-      POSTGRES_HOSTNAME: guacamole-db
-      POSTGRES_DATABASE: ${POSTGRES_DB:-guacamole_db}
-      POSTGRES_USER: ${POSTGRES_USER:-guacamole_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRESQL_HOSTNAME: guacamole-db
+      POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE:-guacamole_db}
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME:-guacamole_user}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
     networks:
       - proxy
       - guacamole-internal
