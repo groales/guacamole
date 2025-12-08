@@ -1,0 +1,49 @@
+services:
+  guacd:
+    container_name: guacd
+    image: guacamole/guacd:latest
+    restart: unless-stopped
+    networks:
+      - guacamole-internal
+
+  guacamole-db:
+    container_name: guacamole-db
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-guacamole_db}
+      POSTGRES_USER: ${POSTGRES_USER:-guacamole_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - guacamole-db_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    networks:
+      - guacamole-internal
+
+  guacamole:
+    container_name: guacamole
+    image: guacamole/guacamole:latest
+    restart: unless-stopped
+    depends_on:
+      - guacd
+      - guacamole-db
+    environment:
+      GUACD_HOSTNAME: guacd
+      GUACD_PORT: 4822
+      POSTGRES_HOSTNAME: guacamole-db
+      POSTGRES_DATABASE: ${POSTGRES_DB:-guacamole_db}
+      POSTGRES_USER: ${POSTGRES_USER:-guacamole_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - proxy
+      - guacamole-internal
+
+volumes:
+  guacamole-db_data:
+    name: guacamole-db_data
+
+networks:
+  proxy:
+    external: true
+  guacamole-internal:
+    name: guacamole-internal

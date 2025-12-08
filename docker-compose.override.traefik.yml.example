@@ -1,0 +1,8 @@
+services:
+  guacamole:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.guacamole.rule=Host(`${DOMAIN_HOST}`)
+      - traefik.http.routers.guacamole.entrypoints=websecure
+      - traefik.http.routers.guacamole.tls.certresolver=letsencrypt
+      - traefik.http.services.guacamole.loadbalancer.server.port=8080

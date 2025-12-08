@@ -1,0 +1,18 @@
+# Environment variables
+.env
+
+# Docker override files (copies of examples)
+docker-compose.override.yml
+
+# Guacamole data
+initdb/
+recordings/
+
+# Backups
+backup/
+*.sql
+*.dump
+
+# OS
+.DS_Store
+Thumbs.db
