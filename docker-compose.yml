@@ -3,6 +3,8 @@ services:
     container_name: guacd
     image: guacamole/guacd:1.6.0
     restart: unless-stopped
+    tmpfs:
+      - /drive:rw,noexec,nosuid,nodev,size=1g
     networks:
       - guacamole-internal
 
