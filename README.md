@@ -21,6 +21,7 @@ Apache Guacamole es un gateway de escritorio remoto sin cliente que soporta prot
 - **Multi-usuario**: Gestión de usuarios, grupos y permisos
 - **Seguridad**: MFA, LDAP/AD, SSO, auditoría de sesiones
 - **Funciones**: Clipboard, transferencia de archivos, audio, impresión
+- **Optimizaciones**: tmpfs para `/drive` (1GB en RAM) mejora rendimiento en transferencias de archivos
 
 ## Requisitos
 
