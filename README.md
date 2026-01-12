@@ -8,8 +8,7 @@ Apache Guacamole es un gateway de escritorio remoto sin cliente que soporta prot
 - [Requisitos](#requisitos)
 - [⚠️ IMPORTANTE: Inicialización de Base de Datos](#️-importante-inicialización-de-base-de-datos)
 - [Métodos de Despliegue](#métodos-de-despliegue)
-  - [1. Despliegue desde CLI](#1-despliegue-desde-cli)
-  - [2. Despliegue con Portainer](#2-despliegue-con-portainer)
+  - [Despliegue desde CLI](#despliegue-desde-cli)
 - [Proxy Inverso](#proxy-inverso)
 - [Configuración y Administración](#configuración-y-administración)
 - [Referencias](#referencias)
@@ -80,11 +79,11 @@ volumes:
 
 ## Métodos de Despliegue
 
-Guacamole puede desplegarse usando dos métodos principales. **Ambos requieren estar detrás de un proxy inverso** (Traefik o Nginx Proxy Manager).
+Guacamole se despliega usando Docker Compose con CLI. **Debe estar detrás de un proxy inverso** (Traefik o Nginx Proxy Manager).
 
-### 1. Despliegue desde CLI
+### Despliegue desde CLI
 
-Despliegue tradicional usando Docker Compose con `git clone`.
+Despliegue usando Docker Compose con `git clone`.
 
 ```bash
 # 1. Crear red Docker
@@ -115,44 +114,6 @@ sudo docker compose up -d
 ```
 
 **Acceso inicial**: `https://guacamole.example.com/` → Usuario `guacadmin` / Password `guacadmin` (**cambiar inmediatamente**)
-
----
-
-### 2. Despliegue con Portainer
-
-Despliegue mediante interfaz web de Portainer usando stacks.
-
-**📖 Documentación completa**: [Guía de Despliegue con Portainer](https://git.ictiberia.com/groales/guacamole/wiki/Portainer)
-
-#### 2.1. Método Git (Recomendado)
-
-1. **Portainer** → **Stacks** → **Add stack**
-2. **Name**: `guacamole`
-3. **Build method**: `Repository`
-4. **Repository URL**: `https://git.ictiberia.com/groales/guacamole`
-5. **Repository reference**: `refs/heads/main`
-6. **Compose path**: `docker-compose.yml`
-7. **Environment variables**:
-   ```
-   POSTGRES_PASSWORD=tu_contraseña_segura
-   POSTGRES_DB=guacamole_db
-   POSTGRES_USER=guacamole_user
-   DOMAIN_HOST=guacamole.example.com
-   ```
-8. **Deploy the stack**
-
-**⚠️ Importante**: Generar `/opt/stacks/guacamole/initdb/initdb.sql` en el host **antes** de desplegar.
-
-#### 2.2. Método Web Editor
-
-1. **Portainer** → **Stacks** → **Add stack**
-2. **Name**: `guacamole`
-3. **Build method**: `Web editor`
-4. Copiar contenido de `docker-compose.yml` del repositorio
-5. **Environment variables**: (igual que método Git)
-6. **Deploy the stack**
-
-**📖 La wiki incluye**: Pasos detallados, troubleshooting específico, comparativa de métodos.
 
 ---
 
