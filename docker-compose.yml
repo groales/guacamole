@@ -5,8 +5,6 @@ services:
     restart: unless-stopped
     tmpfs:
       - /drive:rw,noexec,nosuid,nodev,size=1g
-    networks:
-      - guacamole-internal
 
   guacamole-db:
     container_name: guacamole-db
@@ -19,8 +17,6 @@ services:
     volumes:
       - guacamole-db_data:/var/lib/postgresql
       - /opt/stacks/guacamole/initdb:/docker-entrypoint-initdb.d:ro
-    networks:
-      - guacamole-internal
 
   guacamole:
     container_name: guacamole
@@ -42,14 +38,13 @@ services:
       WEBAPP_CONTEXT: ROOT
     networks:
       - proxy
-      - guacamole-internal
+      - default
 
 volumes:
   guacamole-db_data:
     name: guacamole-db_data
 
 networks:
+  default:
   proxy:
     external: true
-  guacamole-internal:
-    name: guacamole-internal
