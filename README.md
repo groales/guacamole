@@ -106,7 +106,7 @@ nano .env  # Configurar POSTGRES_PASSWORD y DOMAIN_HOST
 
 # 5. Configurar override según tu proxy
 # Para Traefik:
-cp docker-compose.override.traefik.yml.example docker-compose.override.yml
+cp docker-compose.override.traefik.yml.example compose.override.yaml
 # Para NPM: sin override, usar puerto 8080
 
 # 6. Iniciar servicios
@@ -133,7 +133,7 @@ Guacamole **debe estar detrás de un proxy inverso** para acceso HTTPS con certi
 
 **Configuración rápida**:
 ```bash
-cp docker-compose.override.traefik.yml.example docker-compose.override.yml
+cp docker-compose.override.traefik.yml.example compose.override.yaml
 ```
 
 ### Nginx Proxy Manager
