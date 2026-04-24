@@ -32,7 +32,7 @@ services:
       POSTGRESQL_DATABASE: ${POSTGRES_DB:-guacamole_db}
       POSTGRESQL_USERNAME: ${POSTGRES_USER:-guacamole_user}
       POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
-      # Habilita lectura de IP real del cliente desde headers X-Forwarded-For (Traefik/NPM)
+      # Habilita lectura de IP real del cliente desde headers X-Forwarded-For
       REMOTE_IP_VALVE_ENABLED: 'true'
       # Sirve Guacamole en raíz del dominio (/) en lugar de /guacamole/
       WEBAPP_CONTEXT: ROOT

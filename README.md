@@ -1,193 +1,231 @@
-# Apache Guacamole - Gateway de Escritorio Remoto
+# Apache Guacamole
 
-Apache Guacamole es un gateway de escritorio remoto sin cliente que soporta protocolos estándar como VNC, RDP, SSH y Telnet. No requiere plugins o software del lado del cliente; todo el acceso se realiza a través del navegador web mediante HTML5.
+Gateway de escritorio remoto sin cliente para acceder a sesiones RDP, VNC, SSH y otros protocolos desde el navegador.
 
-## 📋 Índice
-
-- [Características](#características)
-- [Requisitos](#requisitos)
-- [⚠️ IMPORTANTE: Inicialización de Base de Datos](#️-importante-inicialización-de-base-de-datos)
-- [Métodos de Despliegue](#métodos-de-despliegue)
-  - [Despliegue desde CLI](#despliegue-desde-cli)
-- [Proxy Inverso](#proxy-inverso)
-- [Configuración y Administración](#configuración-y-administración)
-- [Referencias](#referencias)
+Referencia oficial de instalación: https://guacamole.apache.org/doc/gug/
 
 ## Características
 
-- **Acceso Web**: Sin cliente, HTML5, multiplataforma
-- **Protocolos**: VNC, RDP, SSH, Telnet, Kubernetes
-- **Multi-usuario**: Gestión de usuarios, grupos y permisos
-- **Seguridad**: MFA, LDAP/AD, SSO, auditoría de sesiones
-- **Funciones**: Clipboard, transferencia de archivos, audio, impresión
-- **Optimizaciones**: tmpfs para `/drive` (1GB en RAM) mejora rendimiento en transferencias de archivos
+- 🖥️ **Acceso web**: Cliente HTML5 sin software adicional en el equipo del usuario
+- 🔌 **Protocolos remotos**: Soporte para RDP, VNC, SSH, Telnet y más
+- 👥 **Multiusuario**: Gestión de usuarios, permisos y conexiones
+- 🔐 **Seguridad**: Compatible con MFA, LDAP, AD y SSO
+- 📁 **Transferencia de archivos**: Optimizada mediante `tmpfs` en `/drive`
+- 🗃️ **Base de datos PostgreSQL**: Persistencia de configuración y usuarios
 
-## Requisitos
+## Requisitos Previos
 
-- Docker y Docker Compose
-- Red Docker `proxy` (para Traefik/NPM)
-- Dominio configurado (para SSL)
-- Proxy inverso: Traefik o Nginx Proxy Manager
+- Docker Engine instalado
+- Docker Compose instalado
+- Red Docker externa `proxy` creada
+- Contraseña segura generada para `POSTGRES_PASSWORD`
 
-## ⚠️ IMPORTANTE: Inicialización de Base de Datos
+> ⚠️ **Importante**: Guacamole requiere inicialización manual de la base de datos antes del primer arranque completo. El esquema no se crea automáticamente si no aportas el script SQL.
 
-**Guacamole requiere inicialización MANUAL de la base de datos antes del primer uso**. A diferencia de otros servicios, el esquema NO se crea automáticamente.
+## Archivos de este Repositorio
 
-### Generar Script de Inicialización
+Este repositorio contiene:
 
-```bash
-# Generar script SQL
-sudo docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
-
-# Crear directorio en el host
-sudo mkdir -p /opt/stacks/guacamole/initdb
-
-# Mover script al directorio
-sudo mv initdb.sql /opt/stacks/guacamole/initdb/
-
-# Ajustar permisos
-sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
-```
-
-El archivo `initdb.sql` se montará desde el host y PostgreSQL lo ejecutará automáticamente durante el primer inicio mediante bind mount:
-
-```yaml
-volumes:
-  - /opt/stacks/guacamole/initdb:/docker-entrypoint-initdb.d:ro
-```
-
-### Solución de Problemas Comunes
-
-**Error: "relation 'guacamole_user' does not exist"**
-- La base de datos no se inicializó correctamente
-- Solución:
-    ```bash
-    # Verificar que existe el script
-    ls -la /opt/stacks/guacamole/initdb/
-    
-    # Reiniciar servicios (inicialización automática)
-    sudo docker compose down
-    sudo docker volume rm guacamole-db_data
-    sudo docker compose up -d
-    ```
-
-**Error: "FATAL: password authentication failed"**
-- La contraseña en `.env` no coincide
-- Solución: Verifica que `POSTGRES_PASSWORD` sea idéntica en todas las variables
+- `compose.yaml` - Stack base de Guacamole, `guacd` y PostgreSQL
+- `.env.example` - Plantilla de variables de entorno
+- `README.md` - Esta documentación
 
 ---
 
-## Métodos de Despliegue
+## Preparar la Base de Datos
 
-Guacamole se despliega usando Docker Compose con CLI. **Debe estar detrás de un proxy inverso** (Traefik o Nginx Proxy Manager).
-
-### Despliegue desde CLI
-
-Despliegue usando Docker Compose con `git clone`.
+### 1. Generar el script de inicialización
 
 ```bash
-# 1. Crear red Docker
-sudo docker network create proxy
+docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
+```
 
-# 2. Generar script de inicialización (ver sección anterior)
-sudo docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > initdb.sql
-sudo mkdir -p /opt/stacks/guacamole/initdb
-sudo mv initdb.sql /opt/stacks/guacamole/initdb/
-sudo chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
+### 2. Crear el directorio esperado por el compose
 
-# 3. Clonar repositorio
-cd /opt
+```bash
+mkdir -p /opt/stacks/guacamole/initdb
+mv initdb.sql /opt/stacks/guacamole/initdb/
+chmod 644 /opt/stacks/guacamole/initdb/initdb.sql
+```
+
+El `compose.yaml` monta ese directorio en:
+
+```text
+/docker-entrypoint-initdb.d
+```
+
+para que PostgreSQL ejecute el SQL automáticamente durante la inicialización.
+
+---
+
+## Despliegue con Docker Compose
+
+### 1. Clonar el repositorio
+
+```bash
 git clone https://git.ictiberia.com/groales/guacamole.git
 cd guacamole
+```
 
-# 4. Configurar variables
+### 2. Preparar `.env`
+
+Genera una contraseña segura:
+
+```bash
+openssl rand -base64 32
+```
+
+Copia el archivo de ejemplo:
+
+```bash
 cp .env.example .env
-nano .env  # Configurar POSTGRES_PASSWORD y DOMAIN_HOST
-
-# 5. Configurar override según tu proxy
-# Para Traefik:
-cp docker-compose.override.traefik.yml.example compose.override.yaml
-# Para NPM: sin override, usar puerto 8080
-
-# 6. Iniciar servicios
-sudo docker compose up -d
 ```
 
-**Acceso inicial**: `https://guacamole.example.com/` → Usuario `guacadmin` / Password `guacadmin` (**cambiar inmediatamente**)
+Contenido esperado:
 
----
-
-## Proxy Inverso
-
-Guacamole **debe estar detrás de un proxy inverso** para acceso HTTPS con certificados SSL.
-
-### Traefik
-
-**📖 Documentación completa**: [Guía de Configuración con Traefik](https://git.ictiberia.com/groales/guacamole/wiki/Traefik)
-
-**Características**:
-- Certificados SSL automáticos (Let's Encrypt)
-- Enrutamiento por dominio mediante labels
-- Renovación automática de certificados
-- Configuración mediante override file
-
-**Configuración rápida**:
-```bash
-cp docker-compose.override.traefik.yml.example compose.override.yaml
+```env
+POSTGRES_PASSWORD='tu_password_generado'
+POSTGRES_DB=guacamole_db
+POSTGRES_USER=guacamole_user
+DOMAIN_HOST=guacamole.example.com
 ```
 
-### Nginx Proxy Manager
-
-**📖 Documentación completa**: [Guía de Configuración con NPM](https://git.ictiberia.com/groales/guacamole/wiki/NPM)
-
-**Características**:
-- Interfaz web para gestión de proxies
-- SSL con Let's Encrypt
-- Configuración visual de proxy hosts
-- Soporte para WebSockets
-
-**Configuración**: Crear proxy host en NPM apuntando a `guacamole:8080`
-
----
-
-## Configuración y Administración
-
-Toda la documentación de configuración y administración está disponible en la wiki:
-
-| Tema | Descripción | Enlace |
-|------|-------------|--------|
-| **Configuración Inicial** | Cambiar contraseña, crear usuarios, permisos | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Configuración-Inicial) |
-| **Crear Conexiones** | RDP, VNC, SSH, parámetros avanzados | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Conexiones) |
-| **Gestión de Usuarios** | Permisos, restricciones, grupos | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Administración) |
-| **Grabación de Sesiones** | Configuración, reproducción, auditoría | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Grabación-de-Sesiones) |
-| **Backup y Restauración** | pg_dump, volúmenes, automatización | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Backup-y-Restauración) |
-| **Actualización** | Manual, Watchtower, rollback | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Actualización) |
-| **Solución de Problemas** | Errores comunes, logs, troubleshooting | [📖 Wiki](https://git.ictiberia.com/groales/guacamole/wiki/Solución-de-Problemas) |
-
-### 🔍 Ver Logs
 
 ```bash
-# Logs de todos los servicios
-sudo docker compose logs -f
+docker network create proxy
+```
 
-# Logs de servicio específico
-sudo docker logs -f guacamole
-sudo docker logs -f guacd
-sudo docker logs -f guacamole-db
+### 4. Desplegar
+
+```bash
+docker compose up -d
+```
+
+### 5. Verificar arranque
+
+```bash
+docker compose ps
+docker compose logs -f guacamole
+docker compose logs -f guacamole-db
 ```
 
 ---
 
-## Referencias
+## Acceso Inicial
 
-- **Documentación Oficial**: https://guacamole.apache.org/doc/gug/
-- **Docker Hub - Guacamole**: https://hub.docker.com/r/guacamole/guacamole
-- **Docker Hub - guacd**: https://hub.docker.com/r/guacamole/guacd
-- **GitHub**: https://github.com/apache/guacamole-server
-- **Wiki del Proyecto**: https://git.ictiberia.com/groales/guacamole/wiki
+
+```text
+https://guacamole.example.com/
+```
+
+Credenciales iniciales por defecto:
+
+- Usuario: `guacadmin`
+- Contraseña: `guacadmin`
+
+Cambíalas inmediatamente después del primer acceso.
 
 ---
 
-**Licencia**: Apache License 2.0  
-**Mantenido por**: groales  
-**Repositorio**: https://git.ictiberia.com/groales/guacamole
+## Comandos Útiles
+
+### Ver logs
+
+```bash
+docker compose logs -f
+docker compose logs -f guacamole
+docker compose logs -f guacd
+docker compose logs -f guacamole-db
+```
+
+### Reiniciar servicios
+
+```bash
+docker compose restart guacamole
+docker compose restart guacd
+docker compose restart guacamole-db
+```
+
+### Actualizar contenedores
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+### Detener el stack
+
+```bash
+docker compose down
+```
+
+---
+
+## Estructura de Persistencia
+
+```text
+Volumen Docker:
+└── guacamole-db_data -> /var/lib/postgresql
+
+Bind mount requerido:
+└── /opt/stacks/guacamole/initdb -> /docker-entrypoint-initdb.d
+```
+
+---
+
+## Configuración Avanzada
+
+### Contexto web en raíz
+
+El compose define:
+
+```yaml
+WEBAPP_CONTEXT: ROOT
+```
+
+para servir Guacamole directamente en `/` en lugar de `/guacamole/`.
+
+### IP real del cliente
+
+También se habilita:
+
+```yaml
+REMOTE_IP_VALVE_ENABLED: 'true'
+```
+
+para permitir lectura de cabeceras `X-Forwarded-For` desde el proxy inverso.
+
+---
+
+## Solución de Problemas
+
+### Error `relation 'guacamole_user' does not exist`
+
+La base de datos no se inicializó correctamente. Verifica que el archivo `initdb.sql` exista en `/opt/stacks/guacamole/initdb/` y recrea la base si es necesario.
+
+### Error de autenticación PostgreSQL
+
+Comprueba que `POSTGRES_PASSWORD` en `.env` coincida con la contraseña usada en el contenedor de base de datos.
+
+### El proxy no enruta el dominio
+
+
+---
+
+## Seguridad
+
+### Recomendaciones
+
+1. Cambia inmediatamente la contraseña de `guacadmin`.
+2. Usa HTTPS y un proxy inverso válido para exponer el servicio.
+3. Haz copia de seguridad periódica del volumen `guacamole-db_data` y del SQL de inicialización que uses como referencia.
+4. Revisa integraciones de autenticación externa si el servicio va a tener varios usuarios.
+
+---
+
+## Recursos
+
+- Documentación oficial Guacamole: https://guacamole.apache.org/doc/gug/
+- Imagen Docker Guacamole: https://hub.docker.com/r/guacamole/guacamole
+- Imagen Docker guacd: https://hub.docker.com/r/guacamole/guacd
+- Wiki del proyecto: https://git.ictiberia.com/groales/guacamole/wiki

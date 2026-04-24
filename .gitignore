@@ -2,7 +2,6 @@
 .env
 
 # Docker override files (copies of examples)
-docker-compose.override.yml
 
 # Guacamole data
 initdb/
