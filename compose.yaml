@@ -36,6 +36,9 @@ services:
       REMOTE_IP_VALVE_ENABLED: 'true'
       # Sirve Guacamole en raíz del dominio (/) en lugar de /guacamole/
       WEBAPP_CONTEXT: ROOT
+    #Puertos expuestos para acceso directo (opcional, se recomienda usar proxy inverso)  
+    #ports:
+    # - 8080:8080
     networks:
       - proxy
       - default
